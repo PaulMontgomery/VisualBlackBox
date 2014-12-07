@@ -1,0 +1,67 @@
+Visual Black Box Installation Guide
+-----------------------------------
+
+Visual Black Box (VBB) is designed to be very easy to install and quickly run
+a compelling demonstration.  In order to do this, the installation steps below
+will install a small/lightweight Node.js web server on the installation
+system which will serve up a demo immediately after completion.
+
+VBB was designed with platform portability in mind and has been shown to work
+on Ubuntu, CentOS, MacOS and Windows 8 so far.
+
+Installation Steps:
+1) git clone https://github.com/PaulMontgomery/VisualBlackBox to your demo
+	system.
+	- For more information/client downloads, see: http://git-scm.com/
+2) Change into the new VisualBlackBox directory
+3) Install Node.js
+	- For instructions/download, see: http://nodejs.org/
+4) Install npm (Node.js package manager)
+	- May install with platform package manager of course
+	- For package lists, see: https://www.npmjs.org/
+5) Execute: [sudo] npm install socket.io
+	- Note: The "[sudo]" part indicates that this might be needed on some
+		platforms to gain sufficient priviledge to install.
+6) Execute: [sudo] npm install express
+7) Execute: [sudo] npm install config.json
+8) Download the d3 Javascript library and place it into the VisualBlackBox dir
+	- Name the file 'd3.min.js'
+	- For instructions/downloads, see: http://d3js.org/
+	- The d3 minimal package is fine
+
+Optional:
+* May install Python to execute the demo.py demonstration.
+	- For instructions/downloads, see: https://www.python.org/
+
+VBB is now installed!
+
+
+
+Run the Demo:
+
+In order to run VBB and the demo, execute the following command from the
+VisualBlackBox root directory:
+
+[sudo] node vbb_server.js
+
+Note: Please see & and nohup if you wish this to be a long running server.
+
+By default, VBB will attempt to serve web pages on port 80.  If there are
+other web servers running, it will not be able to display any results.  Also,
+many platforms indclude firewalls such as iptables.  Please place appropriate
+holes in the firewall to enable the demo where applicable/needed (but beware
+of the security implications of opening ports before doing this please!).
+
+Now just point your browser to:
+http://[your system's IP address]/linegraph
+
+You may see "Linegraph Widget Demo" at the top of the screen and nothing
+else.  If so, congratulations!  In order to see a linegraph, there needs
+to be data so let's run the optional demo:
+
+a) cd /gui_widgets/linegraph
+b) python demo.py
+
+This is a simple Python program that generates 3 random data samples every 5
+seconds for the three lines on the graph.  Since this is a real time graph,
+watch as a value is created for days 1-30 in the month of May 2014.
