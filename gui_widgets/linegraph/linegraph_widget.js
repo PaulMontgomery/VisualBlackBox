@@ -219,22 +219,22 @@ function receive_config(config_file) {
 
 // Websockets connection to receive server pushed data
 var socket = io();
-socket.on('linegraph_config', function(msg){
+socket.on('linegraph/linegraph_config', function(msg){
   console.log("Received linegraph_config command");
   receive_config(msg);
 });
 
-socket.on('linegraph_refresh', function(msg){
+socket.on('linegraph/linegraph_refresh', function(msg){
   console.log("Recevied linegraph_refresh command");
   receive_data(msg);
 });
 
-socket.on('linegraph_delete', function(msg){
+socket.on('linegraph/linegraph_delete', function(msg){
   console.log("Received linegraph_delete command");
   redraw_svg();
   full_data = [];
 });
 
 
-receive_config('linegraph.cfg'); // First time config
-receive_data('linegraph.tsv'); // First time download
+receive_config('linegraph/linegraph.cfg'); // First time config
+receive_data('linegraph/linegraph.tsv'); // First time download

@@ -1,0 +1,7 @@
+{
+	"version": "0.0.1",
+	"listen_port": 80,
+	"enabled_gui_widgets": [
+		"linegraph"
+	]
+}
