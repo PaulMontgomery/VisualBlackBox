@@ -20,9 +20,11 @@ Execute: [sudo] node vbb_server.js
 
 TODOs:
 * Add VBB home page
-* Remove linegraph globals
 * Add a REST API to receive data and send visualizations
   - Create a REST client to match
+* Add a widget specific config file in each widget dir
+  - Holds widget specific URL, file monitor, etc configuration
+  - Remove assumptions below on URL and file monitor defaults
 */
 
 
@@ -32,11 +34,11 @@ var io = require('socket.io')(http);
 var fs = require('fs');
 var config = require('config.json')('./vbb_config.json');
 
-// Globals
-var linegraph_data = '';
+
+var widget_data = {};
 
 
-// Default web pages/resources, always server up d3 and socket.io
+// Default web pages/resources, always serve up d3 and socket.io js libs
 app.get('/d3.min.js', function(req, res){
   console.log("Sending d3.min.js");
   res.sendFile(__dirname + '/d3.min.js');
@@ -46,10 +48,10 @@ app.get('/socket.io/socket.io.js', function(req, res){
   res.sendFile(__dirname + '/socket.io.js');
 });
 
+
 // Iterate enabled gui widgets and enable URLs/file listeners, etc
 config.enabled_gui_widgets.forEach(function(entry) {
   widget_dir = __dirname + '/gui_widgets/' + entry + '/';
-  // TODO: Read a widget specific config file on what URLs to open, etc later
   // Assume that each widget has these URLs exposed:
   // * index.html - basic holder for the visualization
   // * [widget name].cfg - (example: linegraph.cfg) widget-specific config
@@ -67,8 +69,8 @@ config.enabled_gui_widgets.forEach(function(entry) {
   });
   app.get('/' + entry + '/'  + entry + '.tsv', function(req, res){
     console.log("Sending " + entry + ".tsv cached data");
-    res.send(linegraph_data);
-    linegraph_data = ''; // TODO may want to hold on to this later
+    res.send(widget_data[entry]);
+    widget_data[entry] = ''; // TODO may want to hold on to this later
   });
   app.get('/' + entry + '/'  + entry + '.cfg', function(req, res){
     console.log("Sending " + entry + ".cfg");
@@ -88,7 +90,7 @@ config.enabled_gui_widgets.forEach(function(entry) {
           console.log("Unable to access " + entry + ".tsv, continuing...");
           return;
         };
-        linegraph_data = String(data); // TODO obviously need to change this
+        widget_data[entry] = String(data);
       });
       fs.unlink(widget_dir + entry + '.tsv');
       io.sockets.emit(entry + '/' + entry + '_refresh', entry + '/' + entry + '.tsv');
@@ -99,7 +101,7 @@ config.enabled_gui_widgets.forEach(function(entry) {
         return;
       };
       console.log(entry + ".del changed");
-      linegraph_data = '';  // TODO change this later
+      widget_data[entry] = '';
       io.sockets.emit(entry + '/' + entry + '_delete', entry + '.tsv');
       fs.unlink(widget_dir + entry + '.del');
   });
