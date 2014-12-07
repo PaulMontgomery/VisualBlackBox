@@ -19,12 +19,10 @@ Data Visualization Web Server
 Execute: [sudo] node vbb_server.js
 
 TODOs:
-* Read a JSON configuration file to remove hardcoding below and get:
-  - Port and optionally IP address to bind to
-  - Which GUI widgets to display, configuration, watch files, etc
+* Add VBB home page
+* Remove linegraph globals
 * Add a REST API to receive data and send visualizations
   - Create a REST client to match
-* Add web page-based configuration editing
 */
 
 
@@ -32,17 +30,13 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var fs = require('fs');
+var config = require('config.json')('./vbb_config.json');
 
-
-// ---------- Globals ---------
+// Globals
 var linegraph_data = '';
 
 
-// ---------- Web Resources ----------
-app.get('/', function(req, res){
-  console.log("Sending index.html");
-  res.sendFile(__dirname + '/gui_widgets/linegraph/index.html');
-});
+// Default web pages/resources, always server up d3 and socket.io
 app.get('/d3.min.js', function(req, res){
   console.log("Sending d3.min.js");
   res.sendFile(__dirname + '/d3.min.js');
@@ -51,48 +45,71 @@ app.get('/socket.io/socket.io.js', function(req, res){
   console.log("Sending socket.io.js");
   res.sendFile(__dirname + '/socket.io.js');
 });
-app.get('/linegraph_widget.js', function(req, res){
-  console.log("Sending linegraph_widget.js");
-  res.sendFile(__dirname + '/gui_widgets/linegraph/linegraph_widget.js');
-});
-app.get('/linegraph.tsv', function(req, res){
-  console.log("Sending linegraph.tsv cached data");
-  res.send(linegraph_data);
-});
-app.get('/linegraph.cfg', function(req, res){
-  console.log("Sending linegraph.cfg");
-  res.sendFile(__dirname + '/gui_widgets/linegraph/linegraph.cfg');
-});
 
-// ---------- File Watch List ----------
-fs.watchFile(__dirname + '/gui_widgets/linegraph/linegraph.tsv', function(curr,prev) {
-    if (curr.isFile() != true) {
-      // linegraph.tsv was likely just deleted
-      return;
-    };
-    console.log("linegraph.tsv changed");
-    fs.readFile(__dirname + '/gui_widgets/linegraph/linegraph.tsv', function(err, data) {
-      if (err) {
-        console.log("Unable to access linegraph.tsv, continuing...");
+// Iterate enabled gui widgets and enable URLs/file listeners, etc
+config.enabled_gui_widgets.forEach(function(entry) {
+  widget_dir = __dirname + '/gui_widgets/' + entry + '/';
+  // TODO: Read a widget specific config file on what URLs to open, etc later
+  // Assume that each widget has these URLs exposed:
+  // * index.html - basic holder for the visualization
+  // * [widget name].cfg - (example: linegraph.cfg) widget-specific config
+  // * [widget name]_widget.js - the visualization d3-based javascript
+  // ... and these files monitored:
+  // * [widget name].tsv - the .tsv input data (also sent)
+  // * [widget name].del - a write to this file resets the visualization
+  app.get('/' + entry, function(req, res){
+    console.log("Sending " + entry + " index.html");
+    res.sendFile(widget_dir + 'index.html');
+  });
+  app.get('/' + entry + '/' + entry + '_widget.js', function(req, res){
+    console.log("Sending " + entry + "_widget.js");
+    res.sendFile(widget_dir + entry + '_widget.js');
+  });
+  app.get('/' + entry + '/'  + entry + '.tsv', function(req, res){
+    console.log("Sending " + entry + ".tsv cached data");
+    res.send(linegraph_data);
+    linegraph_data = ''; // TODO may want to hold on to this later
+  });
+  app.get('/' + entry + '/'  + entry + '.cfg', function(req, res){
+    console.log("Sending " + entry + ".cfg");
+    res.sendFile(widget_dir + entry + '.cfg');
+  });
+
+
+  // widget files to be monitored
+  fs.watchFile(widget_dir + entry + '.tsv', function(curr,prev) {
+      if (curr.isFile() != true) {
+        // was likely just deleted
         return;
       };
-      linegraph_data = String(data);
-    });
-    fs.unlink(__dirname + '/gui_widgets/linegraph/linegraph.tsv');
-    io.sockets.emit('linegraph_refresh', 'linegraph.tsv');
+      console.log(entry + ".tsv changed");
+      fs.readFile(widget_dir + entry + '.tsv', function(err, data) {
+        if (err) {
+          console.log("Unable to access " + entry + ".tsv, continuing...");
+          return;
+        };
+        linegraph_data = String(data); // TODO obviously need to change this
+      });
+      fs.unlink(widget_dir + entry + '.tsv');
+      io.sockets.emit(entry + '/' + entry + '_refresh', entry + '/' + entry + '.tsv');
+  });
+
+  fs.watchFile(widget_dir + entry + '.del', function(curr,prev) {
+      if (curr.isFile() != true) {
+        return;
+      };
+      console.log(entry + ".del changed");
+      linegraph_data = '';  // TODO change this later
+      io.sockets.emit(entry + '/' + entry + '_delete', entry + '.tsv');
+      fs.unlink(widget_dir + entry + '.del');
+  });
 });
 
-fs.watchFile(__dirname + '/gui_widgets/linegraph/linegraph.del', function(curr,prev) {
-    if (curr.isFile() != true) {
-      return;
-    };
-    console.log("linegraph.del changed");
-    linegraph_data = '';
-    io.sockets.emit('linegraph_delete', 'linegraph.tsv');
-    fs.unlink(__dirname + '/gui_widgets/linegraph/linegraph.del');
-});
 
-
-http.listen(80, function(){
-  console.log('Visual Black Box Server v0.0.1\n\t...listening on port 80');
+http.listen(config.listen_port, function(){
+  console.log('Visual Black Box server');
+  console.log('configuration:');
+  console.log('\tversion: ' + config.version);
+  console.log('\tlisten port: ' + config.listen_port);
+  console.log('\tenabled gui widgets: ' + config.enabled_gui_widgets);
 });
