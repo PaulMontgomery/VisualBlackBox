@@ -12,10 +12,10 @@ way. Let's get right to the gist of it...
 If you can create a .TSV (tab-separated values) file that looks something
 like this:
 
-`date	close0	close1	close2
-5-May-12	483.10	823.4	582
-4-May-12	728.88	458	822
-3-May-12	612.17	721	624
+`date	close0	close1	close2  
+5-May-12	483.10	823.4	582  
+4-May-12	728.88	458	822  
+3-May-12	612.17	721	624  
 2-May-12	582.13	621	442`
 
 ... then you can create web browser-enabled data visualizations that look
