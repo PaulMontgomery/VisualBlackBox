@@ -16,7 +16,8 @@ limitations under the License.
 
 Linegraph Demo
 --------------
-Execute: python demo.py
+Install: cp random_linegraph.cfg linegraph.cfg
+Execute: python random_demo.py
 
 This demo program generates some random 3 line linegraph data in .TSV
 format for the month of May 2014 with 5 second sleeps in between each
