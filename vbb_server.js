@@ -22,9 +22,6 @@ TODOs:
 * Add VBB home page
 * Add a REST API to receive data and send visualizations
   - Create a REST client to match
-* Add a widget specific config file in each widget dir
-  - Holds widget specific URL, file monitor, etc configuration
-  - Remove assumptions below on URL and file monitor defaults
 */
 
 
@@ -38,6 +35,13 @@ var config = require('config.json')('./vbb_config.json');
 var widget_data = {};
 
 
+console.log('Visual Black Box server');
+console.log('configuration:');
+console.log('\tversion: ' + config.version);
+console.log('\tlisten port: ' + config.listen_port);
+console.log('\tenabled gui widgets: ' + config.enabled_gui_widgets);
+
+
 // Default web pages/resources, always serve up d3 and socket.io js libs
 app.get('/d3.min.js', function(req, res){
   console.log("Sending d3.min.js");
@@ -48,70 +52,61 @@ app.get('/socket.io/socket.io.js', function(req, res){
   res.sendFile(__dirname + '/socket.io.js');
 });
 
-
 // Iterate enabled gui widgets and enable URLs/file listeners, etc
-config.enabled_gui_widgets.forEach(function(entry) {
-  widget_dir = __dirname + '/gui_widgets/' + entry + '/';
-  // Assume that each widget has these URLs exposed:
-  // * index.html - basic holder for the visualization
-  // * [widget name].cfg - (example: linegraph.cfg) widget-specific config
-  // * [widget name]_widget.js - the visualization d3-based javascript
-  // ... and these files monitored:
-  // * [widget name].tsv - the .tsv input data (also sent)
-  // * [widget name].del - a write to this file resets the visualization
-  app.get('/' + entry, function(req, res){
-    console.log("Sending " + entry + " index.html");
-    res.sendFile(widget_dir + 'index.html');
-  });
-  app.get('/' + entry + '/' + entry + '_widget.js', function(req, res){
-    console.log("Sending " + entry + "_widget.js");
-    res.sendFile(widget_dir + entry + '_widget.js');
-  });
-  app.get('/' + entry + '/'  + entry + '.tsv', function(req, res){
-    console.log("Sending " + entry + ".tsv cached data");
-    res.send(widget_data[entry]);
-    widget_data[entry] = ''; // TODO may want to hold on to this later
-  });
-  app.get('/' + entry + '/'  + entry + '.cfg', function(req, res){
-    console.log("Sending " + entry + ".cfg");
-    res.sendFile(widget_dir + entry + '.cfg');
+config.enabled_gui_widgets.forEach(function(widget_name) {
+  widget_dir = __dirname + '/gui_widgets/' + widget_name + '/';
+  console.log(widget_name + " widget configuration:");
+  console.log("\tenabled URLs:");
+  // Read the required [widget_name]_config.json for url and file info
+  var widget_config = require('config.json')(widget_dir + widget_name + '_config.json');
+  // Iterate each widget required URL and enable it
+  widget_config.enabled_urls.forEach(function(url_record) {
+    if (url_record['file_name'].length > 0) {
+      // Just serve normal files
+      console.log("\t\t" + widget_name + '/' + url_record['url']);
+      app.get('/' + widget_name + '/' + url_record['url'], function(req, res){
+        console.log("sending " + widget_name + ":" + url_record['file_name']);
+        res.sendFile(widget_dir + url_record['file_name']);
+      });
+    } else {
+      // Special case, cache data in widget-specific memory
+      console.log("\t\t" + widget_name + '/' + url_record['url'] + " (cached data)");
+      app.get('/' + widget_name + '/'  + url_record['url'], function(req, res){
+        console.log("sending " + widget_name + ":" + url_record['url'] + " cached data");
+        res.send(widget_data[widget_name]);
+        widget_data[widget_name] = '';
+      });
+    };
   });
 
-
-  // widget files to be monitored
-  fs.watchFile(widget_dir + entry + '.tsv', function(curr,prev) {
-      if (curr.isFile() != true) {
-        // was likely just deleted
-        return;
-      };
-      console.log(entry + ".tsv changed");
-      fs.readFile(widget_dir + entry + '.tsv', function(err, data) {
-        if (err) {
-          console.log("Unable to access " + entry + ".tsv, continuing...");
+  // Iterate the file events and enable them
+  console.log("\tfile events:");
+  widget_config.file_events.forEach(function(file_event_record) {
+    console.log("\t\t" + file_event_record['event_name'] + " - type: " + file_event_record['action'])
+    fs.watchFile(widget_dir + file_event_record['file_name'], function(curr,prev) {
+        if (curr.isFile() != true) { // was likely just deleted
           return;
         };
-        widget_data[entry] = String(data);
-      });
-      fs.unlink(widget_dir + entry + '.tsv');
-      io.sockets.emit(entry + '/' + entry + '_refresh', entry + '/' + entry + '.tsv');
-  });
-
-  fs.watchFile(widget_dir + entry + '.del', function(curr,prev) {
-      if (curr.isFile() != true) {
-        return;
-      };
-      console.log(entry + ".del changed");
-      widget_data[entry] = '';
-      io.sockets.emit(entry + '/' + entry + '_delete', entry + '.tsv');
-      fs.unlink(widget_dir + entry + '.del');
+        console.log("event: " + widget_name + "/" + file_event_record['file_name'] + " changed");
+        if (file_event_record['action'] == "store") {
+          fs.readFile(widget_dir + file_event_record['file_name'], function(err, data) {
+            if (err) {
+              console.log("Unable to access " + widget_name + "/" + file_even_record['file_name'] + ", continuing...");
+              return;
+            };
+            widget_data[widget_name] = String(data);
+          });
+        };
+        if (file_event_record['action'] == "delete") {
+          widget_data[widget_name] = '';
+        };
+        fs.unlink(widget_dir + file_event_record['file_name']);
+        io.sockets.emit(widget_name + '/' + file_event_record['event_name'],
+          widget_name + '/' + file_event_record['event_data']);
+    });
   });
 });
 
 
 http.listen(config.listen_port, function(){
-  console.log('Visual Black Box server');
-  console.log('configuration:');
-  console.log('\tversion: ' + config.version);
-  console.log('\tlisten port: ' + config.listen_port);
-  console.log('\tenabled gui widgets: ' + config.enabled_gui_widgets);
 });
