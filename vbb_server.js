@@ -91,7 +91,7 @@ config.enabled_gui_widgets.forEach(function(widget_name) {
         if (file_event_record['action'] == "store") {
           fs.readFile(widget_dir + file_event_record['file_name'], function(err, data) {
             if (err) {
-              console.log("Unable to access " + widget_name + "/" + file_even_record['file_name'] + ", continuing...");
+              console.log("Unable to access " + widget_name + "/" + file_event_record['file_name'] + ", continuing...");
               return;
             };
             widget_data[widget_name] = String(data);
