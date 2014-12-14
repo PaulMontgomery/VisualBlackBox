@@ -1,0 +1,23 @@
+{
+	"version": "0.0.1",
+	"enabled_urls": [
+		{"url": "", "file_name": "index.html"},
+		{"url": "linegraph_widget.js", "file_name": "linegraph_widget.js"},
+		{"url": "linegraph.cfg", "file_name": "linegraph.cfg"},
+		{"url": "linegraph.tsv", "file_name": ""}
+	],
+	"file_events": [
+		{
+			"file_name": "linegraph.tsv",
+			"action": "store",
+			"event_name": "linegraph_refresh",
+			"event_data": "linegraph.tsv"
+		},
+		{
+			"file_name": "linegraph.del",
+			"action": "delete",
+			"event_name": "linegraph_delete",
+			"event_data": "linegraph.tsv"
+		}
+	]
+}
