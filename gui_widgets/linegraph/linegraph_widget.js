@@ -20,6 +20,7 @@ TODO:
 * animation/transitions
 * add SVG text/notification if some config is wrong
 * add mouseover numbers
+* accept max x and y window size
 */
 
 
@@ -33,9 +34,11 @@ var line_type = "linear";
 var line_width = "1.5px";
 var axis_font = "10px sans-serif";
 
+
 var margin = {top: 20, right: 20, bottom: 30, left: 50},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
+
 
 var x = d3.time.scale()
     .range([0, width]);
@@ -51,10 +54,10 @@ var yAxis = d3.svg.axis()
     .scale(y)
     .orient("left");
 
-function line(close_position) {
+function line(float_position) {
   var line_var = d3.svg.line()
       .x(function(d) { return x(d.date); })
-      .y(function(d) { return y(d["close" + close_position]); })
+      .y(function(d) { return y(d["float" + float_position]); })
       .interpolate(line_type);
   return line_var;
 };
@@ -108,19 +111,19 @@ function receive_data(data_file) {
     x.domain(d3.extent(data, function(d) { return d.date; }));
 
     y_domain_array = [];
-    total_close = 0;
+    total_val = 0;
     while(true) {
       data.forEach(function(d) {
-        y_domain_array.push(d["close" + total_close]);
+        y_domain_array.push(d["float" + total_val]);
       });
       if (full_data[0] === undefined) {
         console.log("warning: full_data was undefined")
         break;
       };
-      if (full_data[0]["close" + (total_close + 1)] === undefined) {
+      if (full_data[0]["float" + (total_val + 1)] === undefined) {
         break;
       };
-      total_close += 1;
+      total_val += 1;
     };
     y.domain(d3.extent(y_domain_array));
 
@@ -155,15 +158,15 @@ function receive_data(data_file) {
         .style("stroke", "#000")
         .style("shape-rendering", "crispEdges");
 
-    for (close_pos = 0; close_pos <= total_close; close_pos++) {
+    for (val_pos = 0; val_pos <= total_val; val_pos++) {
       line_color = "black";
-      if (line_colors[close_pos] !== undefined) {
-        line_color = line_colors[close_pos];
+      if (line_colors[val_pos] !== undefined) {
+        line_color = line_colors[val_pos];
       };
       svg.append("path")
           .datum(data)
           .attr("class", "line")
-          .attr("d", line(close_pos))
+          .attr("d", line(val_pos))
           .attr("stroke-width", line_width)
           .attr("stroke", line_color)
           .attr("fill", "none")
@@ -206,6 +209,16 @@ function receive_config(config_file) {
         case "axis_font":
           axis_font = d.value;
           console.log("Config: axis_font = " + axis_font);
+          break;
+        case "width":
+          // TODO
+          //width = d.value;
+          //console.log("Config: width = " + width);
+          break;
+        case "height":
+          // TODO
+          //height = d.value;
+          //console.log("Config: height = " + height);
           break;
 
         default:

@@ -40,13 +40,13 @@ def run():
 	shutil.copy2("linegraph.cfg", "linegraph.del")
 	print("Starting data generation...")
 	for counter in range(1, 30):
-		out_str = "date\tclose0\tclose1\tclose2\n"
+		out_str = "date\tfloat0\tfloat1\tfloat2\n"
 		time.sleep(5)
 		print("{}-May-14".format(counter))
-		close0 = randint(100, 1000);
-		close1 = randint(100, 1000);
-		close2 = randint(100, 1000);
-		out_str += "{}-May-14\t{}\t{}\t{}\n".format(counter, close0, close1, close2)
+		val0 = randint(100, 1000);
+		val1 = randint(100, 1000);
+		val2 = randint(100, 1000);
+		out_str += "{}-May-14\t{}\t{}\t{}\n".format(counter, val0, val1, val2)
 		fptr = open("linegraph.tsv", "w")
 		fptr.write(out_str)
 		fptr.close()
