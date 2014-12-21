@@ -20,7 +20,6 @@ TODO:
 * animation/transitions
 * add SVG text/notification if some config is wrong
 * add mouseover numbers
-* accept max x and y window size
 */
 
 
@@ -28,7 +27,7 @@ var full_data = [];
 var x_title = "X Axis Title";
 var x_date_format = null;
 var y_title = "Y Axis Title";
-var y_max = 100;
+var max_samples = 100;
 var line_colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#00FFFF", "#FF00FF"];
 var line_type = "linear";
 var line_width = "1.5px";
@@ -38,7 +37,6 @@ var axis_font = "10px sans-serif";
 var margin = {top: 20, right: 20, bottom: 30, left: 50},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
-
 
 var x = d3.time.scale()
     .range([0, width]);
@@ -63,6 +61,17 @@ function line(float_position) {
 };
 
 function redraw_svg() {
+  x = d3.time.scale()
+    .range([0, width]);
+  y = d3.scale.linear()
+    .range([height, 0]);
+  xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+  yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
   d3.selectAll("svg").remove();
   var svg = d3.select("body").append("svg")
       .attr("width", width + margin.left + margin.right)
@@ -88,8 +97,8 @@ function receive_data(data_file) {
       d.date = x_date_format.parse(d.date);
     });
     full_data = data.concat(full_data);
-    if (full_data.length > y_max) {
-      full_data = full_data.slice(0, y_max);
+    if (full_data.length > max_samples) {
+      full_data = full_data.slice(0, max_samples);
     };
     data = full_data;
     if (data.length <= 0) {
@@ -190,9 +199,9 @@ function receive_config(config_file) {
           y_title = d.value;
           console.log("Config: y_title = " + y_title);
           break;
-        case "y_max":
-          y_max = d.value;
-          console.log("Config: y_max = " + y_max);
+        case "max_samples":
+          max_samples = d.value;
+          console.log("Config: max_samples = " + max_samples);
           break;
         case "line_colors":
           line_colors = d.value.split(',');
@@ -211,14 +220,12 @@ function receive_config(config_file) {
           console.log("Config: axis_font = " + axis_font);
           break;
         case "width":
-          // TODO
-          //width = d.value;
-          //console.log("Config: width = " + width);
+          width = d.value - margin.left - margin.right,
+          console.log("Config: width = " + d.value + "(" + width + ")");
           break;
         case "height":
-          // TODO
-          //height = d.value;
-          //console.log("Config: height = " + height);
+          height = d.value - margin.top - margin.bottom;
+          console.log("Config: height = " + d.value + "(" + height + ")");
           break;
 
         default:
