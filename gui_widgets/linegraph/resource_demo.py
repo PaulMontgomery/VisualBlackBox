@@ -53,7 +53,7 @@ def run():
         disk_percent = disk_data.percent
         print("{} - CPU: {}%, Memory: {}%, Disk Used: {}%".format(
             timestamp, cpu_percent, virt_mem_percent, disk_percent))
-        out_str = "date\tclose0\tclose1\tclose2\n"
+        out_str = "date\tfloat0\tfloat1\tfloat2\n"
         out_str += "{}\t{}\t{}\t{}\n".format(
             timestamp, cpu_percent, virt_mem_percent, disk_percent)
         fptr = open("linegraph.tsv", "w")
